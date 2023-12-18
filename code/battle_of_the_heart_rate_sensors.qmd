@@ -588,3 +588,161 @@ ggsave(file = "session_3_all_devices_hr_comparison_interval_3.jpg",
        height = 4,
        width = 8)
 ```
+
+A plot of the interval session filling in with a three zone and a five zone intensity model
+
+```{r}
+
+# Three zone model
+
+mod_1 <- session_3_hrm_vs_forerunner |> 
+  mutate(
+    elapsed_time = elapsed_time / 60,
+    hrm_pro = hrm_pro / 195 * 100,
+    polar_vs = polar_vs / 195 * 100,
+    forerunner_255 = forerunner_255 / 195 * 100
+  ) |>
+  filter(
+    elapsed_time < 50
+  ) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time, y = hrm_pro, color = "Garmin HRM-Pro"),
+    show.legend = FALSE,
+    alpha = 0.7
+  ) +
+  geom_ribbon(
+    aes(x = elapsed_time,
+        ymin = 60,
+        ymax = 75,
+        fill = "Zone 1"),
+    alpha = 0.3
+  ) +
+  geom_ribbon(
+    aes(x = elapsed_time,
+        ymin = 75,
+        ymax = 87,
+        fill = "Zone 2"
+    ),
+    alpha = 0.3
+  ) +
+  geom_ribbon(
+    aes(x = elapsed_time,
+        ymin = 87,
+        ymax = 100,
+        fill = "Zone 3"),
+    alpha = 0.3
+  ) +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
+  scale_y_continuous(breaks = seq(40, 100, 10)) +
+  scale_color_manual(
+    values = c("Garmin HRM-Pro" = "black", 
+               "Polar Verity Sense" = "#377EB8", 
+               "Garmin Forerunner 255" = "#4DAF4A"
+    )
+  ) +
+  scale_fill_manual(
+    values = c("Zone 1" = "#10e84a",
+               "Zone 2" = "#fab70f",
+               "Zone 3" = "#fa0f1b"
+    )
+  ) +
+  labs(
+    y = "Heart rate (% of max)",
+    x = NULL,
+    color = "Heart rate sensor",
+    fill = "Intensity domain",
+    title = "How does a three zone and a five zone model differ?",
+    subtitle = "45/15 x 10 x 3, progressing from heavy to severe"
+  )
+
+# Five zone model
+
+mod_2 <- session_3_hrm_vs_forerunner |> 
+  mutate(
+    elapsed_time = elapsed_time / 60,
+    hrm_pro = hrm_pro / 195 * 100,
+    polar_vs = polar_vs / 195 * 100,
+    forerunner_255 = forerunner_255 / 195 * 100
+  ) |>
+  filter(
+    elapsed_time < 50
+  ) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time, y = hrm_pro, color = "Garmin HRM-Pro"),
+    show.legend = FALSE,
+    alpha = 0.7
+  ) +
+  geom_ribbon(
+    aes(x = elapsed_time,
+        ymin = 60,
+        ymax = 70,
+        fill = "Zone 1"),
+    alpha = 0.3
+  ) +
+  geom_ribbon(
+    aes(x = elapsed_time,
+        ymin = 70,
+        ymax = 82.5,
+        fill = "Zone 2"
+    ),
+    alpha = 0.3
+  ) +
+  geom_ribbon(
+    aes(x = elapsed_time,
+        ymin = 82.5,
+        ymax = 87.5,
+        fill = "Zone 3"),
+    alpha = 0.3
+  ) +
+  geom_ribbon(
+    aes(x = elapsed_time,
+        ymin = 87.5,
+        ymax = 92.5,
+        fill = "Zone 4"),
+    alpha = 0.3
+  ) +
+  geom_ribbon(
+    aes(x = elapsed_time,
+        ymin = 92.5,
+        ymax = 100,
+        fill = "Zone 5"),
+    alpha = 0.3
+  ) +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
+  scale_y_continuous(breaks = seq(40, 100, 10)) +
+  scale_color_manual(
+    values = c("Garmin HRM-Pro" = "black", 
+               "Polar Verity Sense" = "#377EB8", 
+               "Garmin Forerunner 255" = "#4DAF4A"
+    )
+  ) +
+  scale_fill_manual(
+    values = c("Zone 1" = "#10e84a",
+               "Zone 2" = "#09ab2c",
+               "Zone 3" = "#fab70f",
+               "Zone 4" = "#fa0f1b",
+               "Zone 5" = "#ab0e09"
+    )
+  ) +
+  labs(
+    x = "Time (minutes)",
+    y = "Heart rate (% of max)",
+    color = "Heart rate sensor",
+    fill = "Intensity domain"
+  )
+
+mod_1 / mod_2
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures")
+
+ggsave(file = "session_3_all_devices_hr_comparison_with_intensity_domains.jpg",
+       dpi = 300,
+       height = 6,
+       width = 10)
+```
