@@ -48,7 +48,7 @@ Clean names and select relevant columns
 # HRM-Pro
 
 session_1_hrm_pro <- session_1_hrm_pro |> 
-  janitor::clean_names() |> 
+  janitor::clean_names()
 
 session_2_hrm_pro <- session_2_hrm_pro |> 
   janitor::clean_names() |> 
@@ -605,6 +605,9 @@ mod_1 <- session_3_hrm_vs_forerunner |>
   filter(
     elapsed_time < 50
   ) |> 
+  filter(
+    hrm_pro >= 60
+  ) |> 
   ggplot() +
   geom_line(
     aes(x = elapsed_time, y = hrm_pro, color = "Garmin HRM-Pro"),
@@ -670,11 +673,21 @@ mod_2 <- session_3_hrm_vs_forerunner |>
   filter(
     elapsed_time < 50
   ) |> 
+  filter(
+    hrm_pro >= 60
+  ) |> 
   ggplot() +
   geom_line(
     aes(x = elapsed_time, y = hrm_pro, color = "Garmin HRM-Pro"),
     show.legend = FALSE,
     alpha = 0.7
+  ) +
+  geom_ribbon(
+    aes(x = elapsed_time,
+        ymin = 0, 
+        ymax = 60,
+        fill = "Zone 0"),
+    alpha = 0.3
   ) +
   geom_ribbon(
     aes(x = elapsed_time,
@@ -745,4 +758,41 @@ ggsave(file = "session_3_all_devices_hr_comparison_with_intensity_domains.jpg",
        dpi = 300,
        height = 6,
        width = 10)
+```
+
+## Easy, outdoor run
+
+### Load and clean data
+
+Load data
+
+```{r}
+
+setwd("C:/Users/simen/Desktop/training_analyses/data/battle_of_the_heart_rate_sensors")
+
+session_4_forerunner_255 <- read_csv("session_4_forerunner_255.csv")
+session_4_hrm_pro <- read_csv("session_4_forerunner_255.csv")
+```
+
+Clean data
+
+```{r}
+
+session_4_forerunner_255 <- session_4_forerunner_255 |> 
+  janitor::clean_names() |> 
+ mutate(
+    elapsed_time = record_timestamp_s - min(record_timestamp_s),
+    heart_rate_percent = record_heart_rate_bpm / 195 * 100
+  )
+
+session_4_hrm_pro <- session_4_hrm_pro |> 
+  janitor::clean_names() |> 
+  mutate(
+    elapsed_time = record_timestamp_s - min(record_timestamp_s) / 60,
+    heart_rate_percent = record_heart_rate_bpm / 195 * 100
+  )
+
+session_4_forerunner_255 |> 
+  ggplot() +
+  geom_line(aes(x = elapsed_time, y = record_heart_rate_bpm))
 ```
