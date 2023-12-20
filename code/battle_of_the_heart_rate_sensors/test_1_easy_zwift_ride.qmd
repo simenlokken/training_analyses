@@ -1,0 +1,187 @@
+---
+title: "Session 1: Easy Zwift ride w/ two sprints"
+format: html
+editor: visual
+---
+
+## Set environment and load packages
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+```{r}
+
+library(tidyverse)
+library(patchwork)
+
+theme_set(theme_bw())
+```
+
+## Test 1: Easy ride w/ two sprints, proximal placement
+
+### Load data
+
+```{r}
+
+setwd("C:/Users/simen/Desktop/training_analyses/data/battle_of_the_heart_rate_sensors")
+
+test_1_hrm_pro_prox_plac <- read_csv("test_1_hrm_pro.csv")
+test_1_polar_vs_prox_plac <- read_csv("test_1_polar_vs.csv")
+test_1_forerunner_255_prox_plac <- read_csv("test_1_forerunner_255.csv")
+```
+
+### Clean data
+
+Clean names and select relevant columns
+
+```{r}
+
+# HRM-Pro
+
+test_1_hrm_pro_prox_plac <- test_1_hrm_pro_prox_plac |> 
+  janitor::clean_names() |> 
+  select(record_timestamp_s, record_heart_rate_bpm)
+
+# Polar VS
+
+test_1_polar_vs_prox_plac <- test_1_polar_vs_prox_plac |>
+  janitor::clean_names() |> 
+  select(record_timestamp_s, record_heart_rate_bpm)
+
+# Forerunner 255
+
+test_1_forerunner_255_prox_plac <- test_1_forerunner_255_prox_plac |>
+  janitor::clean_names() |> 
+  select(record_timestamp_s, record_heart_rate_bpm)
+```
+
+Synchronize data by timestamp column
+
+```{r}
+
+test_1_hrm_vs_forerunner_prox_plac <- 
+  left_join(
+    test_1_hrm_pro_prox_plac, 
+    test_1_polar_vs_prox_plac, 
+    by = "record_timestamp_s"
+    ) |> 
+  left_join(
+    test_1_forerunner_255_prox_plac, 
+    by = "record_timestamp_s", 
+    suffix = c("_hrm", "_forerunner")
+  ) |> 
+  rename(
+    hrm_pro = record_heart_rate_bpm.x,
+    polar_vs = record_heart_rate_bpm.y,
+    forerunner_255 = record_heart_rate_bpm
+  ) |> 
+  mutate(elapsed_time = record_timestamp_s - min(record_timestamp_s))
+```
+
+### Plots
+
+Heart rate as a function of time for all three devices
+
+```{r}
+
+test_1_hrm_vs_forerunner_prox_plac |> 
+  mutate(elapsed_time = elapsed_time / 60) |> 
+  filter(elapsed_time < 20) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time,
+        y = hrm_pro,
+        color = "Garmin HRM-Pro"),
+    alpha = 0.8
+  ) +
+  geom_line(
+    aes(x = elapsed_time,
+        y = polar_vs,
+        color = "Polar Verity Sense"),
+    alpha = 0.8
+  ) +
+  geom_line(
+    aes(x = elapsed_time,
+        y = forerunner_255,
+        color = "Garmin Forerunner 255"),
+    alpha = 0.8
+  ) +
+  labs(
+    title = "Test 1: Indoor ride on Zwift",
+    subtitle = "Easy ride with two sprints, Forerunner 255 placed distally", 
+    x = "Time (minutes)",
+    y = "Heart rate (BPM)",
+    color = "Heart rate sensor"
+  ) +
+  scale_y_continuous(breaks = seq(70, 170, 20)) +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
+  scale_color_manual(
+    values = c("Garmin HRM-Pro" = "#E41A1C", 
+               "Polar Verity Sense" = "#377EB8", 
+               "Garmin Forerunner 255" = "#4DAF4A"
+    )
+  )
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures/battle_of_the_heart_rate_sensors")
+
+ggsave(file = "test_1_all_three_devices_hr_comparison_easy_ride.jpg",
+       dpi = 300,
+       height = 4,
+       width = 8)
+```
+
+Absolute difference to HRM-Pro as a function of time
+
+```{r}
+
+test_1_hrm_vs_forerunner_prox_plac |> 
+  mutate(
+    elapsed_time = elapsed_time / 60,
+    diff_vs = abs(hrm_pro - polar_vs),
+    diff_255 = abs(hrm_pro - forerunner_255)
+  ) |> 
+  filter(elapsed_time < 20) |>
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time,
+        y = diff_vs,
+        color = "Polar Verity Sense"),
+    alpha = 0.8
+  ) +
+  geom_line(
+    aes(x = elapsed_time,
+        y = diff_255,
+        color = "Garmin Forerunner 255"),
+    alpha = 0.8
+  ) +
+  labs(
+    title = "Test 1: Indoor ride on Zwift, absolute difference to HRM-Pro",
+    subtitle = "Easy ride with two sprints, Forerunner 255 placed distally", 
+    x = "Time (minutes)",
+    y = "Absolute difference in heart rate (BPM)",
+    color = "Heart rate sensor"
+  ) +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
+   scale_color_manual(
+    values = c("Polar Verity Sense" = "#377EB8", 
+               "Garmin Forerunner 255" = "#4DAF4A"
+    )
+  )
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures/battle_of_the_heart_rate_sensors")
+
+ggsave(file = "test_1_all_three_devices_hr_comparison_easy_ride_abs_diff.jpg",
+       dpi = 300,
+       height = 4,
+       width = 8)
+```

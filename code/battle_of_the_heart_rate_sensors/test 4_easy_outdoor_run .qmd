@@ -1,0 +1,13 @@
+---
+title: "Session 4: Easy outdoor run"
+format: html
+editor: visual
+---
+
+## Test 4: Easy, outdoor run, distal placement
+
+### Load data
+
+### Clean data
+
+### Plots

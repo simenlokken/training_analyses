@@ -1,0 +1,294 @@
+---
+title: "Test 3: HIT Zwift session"
+format: html
+editor: visual
+---
+
+## Set environment and load packages
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+```{r}
+
+
+library(tidyverse)
+library(patchwork)
+
+theme_set(theme_bw())
+```
+
+## Test 3: HIT Zwift session, distal placement
+
+### Load data
+
+```{r}
+
+setwd("C:/Users/simen/Desktop/training_analyses/data/battle_of_the_heart_rate_sensors")
+
+test_3_hrm_pro_dist_plac <- read_csv("test_3_hrm_pro.csv")
+test_3_polar_vs_dist_plac <- read_csv("test_3_polar_vs.csv")
+test_3_forerunner_25_dist_plac <- read_csv("test_3_forerunner_255.csv")
+```
+
+### Clean data
+
+Clean names and select relevant columns
+
+```{r}
+
+test_3_hrm_pro_dist_plac <- test_3_hrm_pro_dist_plac |> 
+  janitor::clean_names() |> 
+  select(record_timestamp_s, record_heart_rate_bpm)
+
+# Polar VS
+
+test_3_polar_vs_dist_plac <- test_3_polar_vs_dist_plac |>
+  janitor::clean_names() |> 
+  select(record_timestamp_s, record_heart_rate_bpm)
+
+# Forerunner 255
+
+test_3_forerunner_25_dist_plac <- test_3_forerunner_25_dist_plac |>
+  janitor::clean_names() |> 
+  select(record_timestamp_s, record_heart_rate_bpm)
+```
+
+Synchronize by the timestamp column
+
+```{r}
+
+test_3_hrm_vs_forerunner_dist_plac <- 
+  left_join(
+    test_3_hrm_pro_dist_plac, 
+    test_3_polar_vs_dist_plac, 
+    by = "record_timestamp_s"
+    ) |> 
+  left_join(
+    test_3_forerunner_25_dist_plac, 
+    by = "record_timestamp_s", 
+    suffix = c("_hrm", "_forerunner")
+  ) |> 
+  rename(
+    hrm_pro = record_heart_rate_bpm.x,
+    polar_vs = record_heart_rate_bpm.y,
+    forerunner_255 = record_heart_rate_bpm
+  ) |> 
+  mutate(
+    elapsed_time = record_timestamp_s - min(record_timestamp_s)
+  )
+```
+
+### Plots
+
+Heart rate as a function of time for all three devices for the whole session
+
+```{r}
+
+test_3_hrm_vs_forerunner_dist_plac |> 
+  mutate(
+    elapsed_time = elapsed_time / 60,
+    hrm_pro = hrm_pro / 195 * 100,
+    polar_vs = polar_vs / 195 * 100,
+    forerunner_255 = forerunner_255 / 195 * 100
+  ) |>
+  filter(
+    elapsed_time < 51
+  ) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time, y = hrm_pro, color = "Garmin HRM-Pro"),
+    alpha = 0.7
+  ) +
+  geom_line(
+    aes(x = elapsed_time, y = polar_vs, color = "Polar Verity Sense"),
+    alpha = 0.7
+  ) +
+  geom_line(
+    aes(x = elapsed_time, y = forerunner_255, color = "Garmin Forerunner 255"),
+    alpha = 0.7
+  ) +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
+  scale_color_manual(
+    values = c("Garmin HRM-Pro" = "#E41A1C", 
+               "Polar Verity Sense" = "#377EB8", 
+               "Garmin Forerunner 255" = "#4DAF4A"
+    )
+  ) +
+  labs(
+    x = "Time (minutes)",
+    y = "Heart rate (% of maximum)",
+    color = "Heart rate sensor",
+    title = "Test 3: HIT indoor session on Zwift",
+    subtitle = "45/15 x 10 x 3, progressing from heavy to severe"
+  )
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures/battle_of_the_heart_rate_sensors")
+
+ggsave(file = "test_3_all_devices_hr_comparison_full_session.jpg",
+       dpi = 300,
+       height = 4,
+       width = 8)
+```
+
+Absolute difference to HRM-Pro as a function of time for the whole session
+
+```{r}
+
+test_3_hrm_vs_forerunner_dist_plac |> 
+  mutate(
+    elapsed_time = elapsed_time / 60,
+    diff_vs = abs(hrm_pro - polar_vs),
+    diff_255 = abs(hrm_pro - forerunner_255)
+  ) |>
+  filter(
+    elapsed_time < 51
+  ) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time,
+        y = diff_vs,
+        color = "Polar Verity Sense"),
+    alpha = 0.8
+  ) +
+  geom_line(
+    aes(x = elapsed_time,
+        y = diff_255,
+        color = "Garmin Forerunner 255"),
+    alpha = 0.8
+  ) +
+  labs(
+    title = "Test 3: HIT indoor session on Zwift, absolute difference to HRM-Pro",
+    subtitle = "45/15 x 10 x 3, progressing from heavy to severe",
+    y = "Absolute difference in heart rate (BPM)",
+    x = "Time (minutes)",
+    color = "Heart rate sensor"
+  ) +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
+   scale_color_manual(
+     values = c("Polar Verity Sense" = "#377EB8", 
+                "Garmin Forerunner 255" = "#4DAF4A"
+    )
+  )
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures/battle_of_the_heart_rate_sensors")
+
+ggsave(file = "test_3_all_three_devices_hr_comparison__full_session_abs_diff.jpg",
+       dpi = 300,
+       height = 4,
+       width = 8)
+```
+
+Taking a closer look on the second interval
+
+```{r}
+
+test_3_hrm_vs_forerunner_dist_plac |> 
+  mutate(
+    elapsed_time = elapsed_time / 60,
+    hrm_pro = hrm_pro / 195 * 100,
+    polar_vs = polar_vs / 195 * 100,
+    forerunner_255 = forerunner_255 / 195 * 100
+  ) |>
+  filter(
+    elapsed_time >= 24 & elapsed_time < 34
+  ) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time, y = hrm_pro, color = "Garmin HRM-Pro"),
+    alpha = 0.7
+  ) +
+  geom_line(
+    aes(x = elapsed_time, y = polar_vs, color = "Polar Verity Sense"),
+    alpha = 0.7
+  ) +
+  geom_line(
+    aes(x = elapsed_time, y = forerunner_255, color = "Garmin Forerunner 255"),
+    alpha = 0.7
+  ) +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
+  scale_color_manual(
+    values = c("Garmin HRM-Pro" = "#E41A1C", 
+               "Polar Verity Sense" = "#377EB8", 
+               "Garmin Forerunner 255" = "#4DAF4A"
+    )
+  ) +
+  labs(
+    x = "Time (minutes)",
+    y = "Heart rate (% of maximum)",
+    color = "Heart rate sensor",
+    title = "Test 3: HIT indoor session on Zwift",
+    subtitle = "Taking a closer look on the second interval"
+  )
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures/battle_of_the_heart_rate_sensors")
+
+ggsave(file = "test_3_all_devices_hr_comparison_interval_2.jpg",
+       dpi = 300,
+       height = 4,
+       width = 8)
+```
+
+Taking a closer look on the third interval
+
+```{r}
+
+test_3_hrm_vs_forerunner_dist_plac |> 
+  mutate(
+    elapsed_time = elapsed_time / 60,
+    hrm_pro = hrm_pro / 195 * 100,
+    polar_vs = polar_vs / 195 * 100,
+    forerunner_255 = forerunner_255 / 195 * 100
+  ) |>
+  filter(
+    elapsed_time >= 36 & elapsed_time < 46
+  ) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time, y = hrm_pro, color = "Garmin HRM-Pro"),
+    alpha = 0.7
+  ) +
+  geom_line(
+    aes(x = elapsed_time, y = polar_vs, color = "Polar Verity Sense"),
+    alpha = 0.7
+  ) +
+  geom_line(
+    aes(x = elapsed_time, y = forerunner_255, color = "Garmin Forerunner 255"),
+    alpha = 0.7
+  ) +
+  theme(
+    panel.grid.minor = element_blank()
+  ) +
+  scale_color_manual(
+    values = c("Garmin HRM-Pro" = "#E41A1C", 
+               "Polar Verity Sense" = "#377EB8", 
+               "Garmin Forerunner 255" = "#4DAF4A"
+    )
+  ) +
+  labs(
+    x = "Time (minutes)",
+    y = "Heart rate (% of maximum)",
+    color = "Heart rate sensor",
+    title = "Test 3: HIT indoor session on Zwift",
+    subtitle = "Taking a closer look on the third interval"
+  )
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures/battle_of_the_heart_rate_sensors")
+
+ggsave(file = "test_3_all_devices_hr_comparison_interval_3.jpg",
+       dpi = 300,
+       height = 4,
+       width = 8)
+```
