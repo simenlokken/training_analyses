@@ -4,10 +4,154 @@ format: html
 editor: visual
 ---
 
+## Set environment and load packages
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo = TRUE,   
+  message = FALSE,   
+  warning = FALSE 
+)
+```
+
+```{r}
+
+library(tidyverse) 
+library(patchwork)  
+
+theme_set(theme_bw())
+```
+
 ## Test 4: Easy, outdoor run, distal placement
 
 ### Load data
 
+```{r}
+
+setwd("C:/Users/simen/Desktop/training_analyses/data/battle_of_the_heart_rate_sensors")
+
+test_4_hrm_pro_dist_plac <- read_csv("test_4_hrm_pro.csv")
+test_4_forerunner_255_dist_plac <- read_csv("test_4_forerunner_255.csv")
+```
+
 ### Clean data
 
+Clean names and select relevant columns
+
+```{r}
+
+test_4_hrm_pro_dist_plac <- test_4_hrm_pro_dist_plac |> 
+  janitor::clean_names() |> 
+  select(record_timestamp_s, record_heart_rate_bpm)
+
+test_4_forerunner_255_dist_plac <- test_4_forerunner_255_dist_plac |> 
+  janitor::clean_names() |> 
+  select(record_timestamp_s, record_heart_rate_bpm)
+```
+
+Synchronize by timestamp column
+
+```{r}
+
+test_4_hrm_forerunner_dist_plac <- 
+  inner_join(
+    test_4_forerunner_255_dist_plac,
+    test_4_hrm_pro_dist_plac,
+    by = "record_timestamp_s",
+    suffix = c("_255", "_hrm")
+  )
+```
+
+Clean columns and add elapsed time column
+
+```{r}
+
+test_4_hrm_forerunner_dist_plac <- test_4_hrm_forerunner_dist_plac |> 
+  mutate(elapsed_time = record_timestamp_s - min(record_timestamp_s)) |> 
+  rename(
+    hrm_pro = record_heart_rate_bpm_hrm,
+    for_255 = record_heart_rate_bpm_255
+  )
+```
+
 ### Plots
+
+Heart rate as a function of time
+
+```{r}
+
+test_4_hrm_forerunner_dist_plac |> 
+  mutate(elapsed_time = elapsed_time / 60) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time,
+        y = hrm_pro,
+        color = "Garmin HRM-Pro"
+    ),
+    alpha = 0.7
+  ) +
+ geom_line(
+    aes(x = elapsed_time,
+        y = for_255,
+        color = "Garmin Forerunner 255"
+    ),
+    alpha = 0.7
+  ) +
+  scale_color_manual(
+    values = c("Garmin HRM-Pro" = "#E41A1C",
+               "Garmin Forerunner 255" = "#4DAF4A")
+  ) +
+  scale_y_continuous(breaks = seq(55, 160, 20)) +
+  theme(panel.grid.minor = element_blank()) +
+  labs(
+    x = "Time (minutes)",
+    y = "Heart rate (BPM)",
+    title = "Test 4: Easy outdoor run",
+    subtitle = "Forerunner 255 placed distally, same as in test 2 and 3",
+    color = "Heart rate sensor"
+  )
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures/battle_of_the_heart_rate_sensors")
+
+ggsave(file = "test_4_hrm_255_hr_comparison.jpg",
+       dpi = 300,
+       height = 4,
+       width = 8)
+```
+
+Absolute difference to HRM-Pro as a function of time
+
+```{r}
+
+test_4_hrm_forerunner_dist_plac |> 
+  mutate(
+    elapsed_time = elapsed_time / 60,
+    diff_255 = abs(hrm_pro - for_255)
+  ) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time,
+        y = diff_255,
+        color = "Garmin Forerunner 255"),
+    alpha = 0.8
+  ) +
+  scale_color_manual(
+    values = c("Garmin Forerunner 255" = "#4DAF4A")
+  ) +
+  labs(
+    title = "Test 4: Easy outdoor run, absolute difference to HRM-Pro",
+    subtitle = "Forerunner 255 placed distally, same as in test 2 and 3",
+    x = "Time (minutes)",
+    y = "Heart rate (BPM)",
+    color = "Heart rate sensor"
+  ) +
+  theme(panel.grid.minor = element_blank())
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures/battle_of_the_heart_rate_sensors")
+
+ggsave(file = "test_4_hrm_255_hr_comparison_abs_diff.jpg",
+       dpi = 300,
+       height = 4,
+       width = 8)
+```

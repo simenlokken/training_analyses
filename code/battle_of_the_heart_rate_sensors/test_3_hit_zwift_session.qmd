@@ -120,7 +120,7 @@ test_3_hrm_vs_forerunner_dist_plac |>
   scale_color_manual(
     values = c("Garmin HRM-Pro" = "#E41A1C", 
                "Polar Verity Sense" = "#377EB8", 
-               "Garmin Forerunner 255" = "#4DAF4A"
+               "Garmin Forerunner 255" = "#s"
     )
   ) +
   labs(
