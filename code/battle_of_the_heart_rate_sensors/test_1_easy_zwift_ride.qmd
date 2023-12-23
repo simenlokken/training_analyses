@@ -6,12 +6,14 @@ editor: visual
 
 ## Set environment and load packages
 
-```{r setup, include=FALSE}
+```{}
 
-knitr::opts_chunk$set(
-  echo = TRUE,
+source("code/functions.R")
+
+set_environment(
+  warning = FALSE,
   message = FALSE,
-  warning = FALSE
+  echo = TRUE
 )
 ```
 
@@ -142,7 +144,7 @@ Absolute difference to HRM-Pro as a function of time
 
 ```{r}
 
-test_1_hrm_vs_forerunner_prox_plac |> 
+test_1_hrm_vs_forerunner_prox_plac |>
   mutate(
     elapsed_time = elapsed_time / 60,
     diff_vs = abs(hrm_pro - polar_vs),

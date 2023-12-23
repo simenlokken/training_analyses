@@ -1,0 +1,218 @@
+---
+title: "Battle of the Intervals"
+format: html
+quarto:
+  wd: "C:/Users/simen/Desktop/training_analyses"
+---
+
+## Set environment and load packages
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo = TRUE,   
+  message = FALSE,   
+  warning = FALSE 
+)
+```
+
+```{r}
+
+library(tidyverse)
+library(patchwork)
+
+theme_set(theme_bw())
+```
+
+## Interval 1: 45/15 x 10 x 3
+
+### Load data
+
+```{r}
+
+setwd("C:/Users/simen/Desktop/training_analyses")
+
+interval_1 <- read_csv("data/battle_of_the_intervals/interval_1.csv")
+```
+
+### Clean data
+
+```{r}
+
+# Clean names, select columns and drop NA's
+
+interval_1 <- interval_1 |> 
+  janitor::clean_names() |> 
+  select(
+    record_timestamp_s,
+    record_power_watts,
+    record_heart_rate_bpm
+  ) |> 
+  drop_na()
+
+# Create an interval and elapsed time column
+
+interval_1 <- interval_1 |> 
+  mutate(
+    interval = as.factor(case_when(
+      elapsed_time > (12 * 60) & elapsed_time < (22 * 60) ~ 1,
+      elapsed_time > (24 * 60) & elapsed_time < (34 * 60) ~ 2,
+      elapsed_time > (36 * 60) & elapsed_time < (46 * 60) ~ 3)
+    ),
+    elapsed_time = record_timestamp_s - min(record_timestamp_s)
+  )
+```
+
+### Analysis
+
+##### Heart rate and watts as a function of time for the whole session
+
+```{r}
+
+sec_to_min_hr_pwr_normalized <- function(dataframe) {
+  dataframe |> 
+  mutate(
+    elapsed_time = elapsed_time / 60,
+    record_heart_rate_bpm = record_heart_rate_bpm / 195 * 100,
+    record_power_watts = record_power_watts / 75
+  )
+}
+
+interval_1_hr <- interval_1 |> 
+  sec_to_min_hr_pwr_normalized() |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time,
+        y = record_heart_rate_bpm
+    ),
+    color = "red",
+    alpha = 0.7
+  ) +
+  scale_y_continuous(
+    name = "Heart rate (% of maximum)",
+    breaks = seq(40, 95, 10)
+  ) +
+  scale_x_continuous(name = NULL) +
+  theme(
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r}
+
+interval_1_pwr <- interval_1 |> 
+  sec_to_min_hr_pwr_normalized() |> 
+  filter(
+    record_power_watts < 4.5
+  ) |> 
+  ggplot() +
+  geom_area(
+    aes(x = elapsed_time,
+        y = record_power_watts
+    ),
+    fill = "dodgerblue",
+    alpha = 0.7
+  ) +
+  scale_y_continuous(
+    name = "Power (W/kg)"
+  ) +
+  scale_x_continuous(name = "Time (minutes)") +
+  theme(
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r}
+
+interval_1_hr / interval_1_pwr
+```
+
+```{r}
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures/battle_of_the_intervals")
+
+ggsave(
+  filename = "interval_1_hr_pwr_whole_session_line_plot.jpg",
+  dpi = 300,
+  width = 8,
+  height = 5
+  )
+```
+
+##### Heart rate and watts as a function for the whole session, intervals distinguished
+
+```{r}
+
+interval_1_hr_violin <- interval_1 |> 
+  sec_to_min_hr_pwr_normalized() |> 
+  filter(interval %in% c(1:3)) |> 
+  ggplot() +
+  geom_violin(
+    aes(x = interval,
+        y = record_heart_rate_bpm
+    ),
+    fill = "red",
+    alpha = 0.7
+  ) +
+  scale_x_discrete(name = "Interval") +
+  scale_y_continuous(name = "Heart rate (% of maximum") +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  )
+```
+
+```{r}
+
+interval_1_hr_violin / interval_1_pwr
+```
+
+```{r}
+
+setwd("C:/Users/simen/Desktop/training_analyses/figures/battle_of_the_intervals")
+
+ggsave(
+  filename = "interval_1_hr_pwr_whole_session_violin_plot.jpg",
+  dpi = 300,
+  width = 8,
+  height = 5
+  )
+```
+
+##### Statistics from interval 1
+
+```{r}
+
+# Avg HR and PWR from all three intervals
+
+interval_1 |> 
+  sec_to_min_hr_pwr_normalized() |> 
+  group_by(interval) |> 
+  drop_na(interval) |> 
+  summarise(
+    mean_hr = mean(record_heart_rate_bpm),
+    mean_pwr = mean(record_power_watts)
+  )
+
+# Accumulated watts for all intervals
+
+interval_1 |> 
+  group_by(interval) |> 
+  drop_na(interval) |> 
+  summarise(
+    acc_pwr = sum(record_power_watts)
+  )
+```
+
+## Interval 2: 10 min x 3
+
+### Load data
+
+```{r}
+
+
+```
+
+### Clean data
+
+### Analysis
