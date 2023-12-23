@@ -5,11 +5,25 @@ format: html
 
 ## Set environment and load packages
 
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  echo = FALSE
+)
+
+knitr::opts_knit$set(
+  root.dir = "C:/Users/simen/Desktop/training_analyses"
+)
+```
+
 ```{r}
 
-set_environment()
+source("code/functions/functions.R")
 
 library(tidyverse)
+library(introdataviz)
 library(patchwork)
 
 theme_set(theme_bw())
@@ -17,16 +31,80 @@ theme_set(theme_bw())
 
 ## Interval 1: 45/15 x 10 x 3
 
+### Load and clean data
+
 ```{r}
 
+interval_1 <- read_csv("data/battle_of_the_intervals/interval_1.csv")
 
+interval_1 <- prepare_garmin_data(
+  interval_1,
+  max_hr = 195,
+  body_weight = 75
+)
 ```
 
-### Load data
+```{r}
 
-### Clean data
+interval_1 <- interval_1 |> 
+  mutate(
+    interval = as.factor(case_when(
+      elapsed_time_min >= 12 & elapsed_time_min <= 22 ~ 1,
+      elapsed_time_min >= 24 & elapsed_time_min <= 34 ~ 2,
+      elapsed_time_min >= 36 & elapsed_time_min <= 46 ~ 3,
+      TRUE ~ 0)
+    )
+  )
+```
 
 ### Analysis
+
+##### Heart rate as a function of time for the whole session
+
+```{r}
+
+interval_1 |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time_min,
+        y = heart_rate_normalized
+    ),
+        color = "red",
+        alpha = 0.7
+  )
+```
+
+##### Heart rate as a function of time for the second interval
+
+```{r}
+ 
+interval_1 |> 
+  filter(elapsed_time_min >= 24 & elapsed_time_min <= 34) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time_min,
+        y = heart_rate_normalized
+    ),
+        color = "red",
+        alpha = 0.7
+  )
+```
+
+##### Heart rate as a function of time for the third interval
+
+```{r}
+
+interval_1 |> 
+  filter(elapsed_time_min >= 36 & elapsed_time_min <= 46) |> 
+  ggplot() +
+  geom_line(
+    aes(x = elapsed_time_min,
+        y = heart_rate_normalized
+    ),
+        color = "red",
+        alpha = 0.7
+  )
+```
 
 ## Interval 2: 10 min x 3
 
